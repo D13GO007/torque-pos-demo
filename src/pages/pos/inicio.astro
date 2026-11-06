@@ -26,12 +26,12 @@ const hoyStr = hoy.toISOString();
 
 const { data: ventas } = await supabase
   .from('ventas')
-  .select('total, estado, fecha')
+  .select('total_neto, estado, fecha')
   .gte('fecha', hoyStr);
 
 // Filtramos solo las ventas exitosas de hoy
 const ventasHoy = ventas?.filter(v => v.estado === 'completada') || [];
-const totalVentasHoy = ventasHoy.reduce((acc, curr) => acc + (curr.total || 0), 0);
+const totalVentasHoy = ventasHoy.reduce((acc, curr) => acc + (curr.total_neto || 0), 0);
 const numVentasHoy = ventasHoy.length;
 
 // Formateador de moneda colombiana
