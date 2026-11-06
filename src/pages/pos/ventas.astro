@@ -1,4 +1,4 @@
-﻿---
+---
 import '../../styles.css';
 import { supabase } from '../../lib/supabase.js';
 
@@ -314,6 +314,13 @@ function limpiarNombreReferencia(nombreFamilia, nombreReferencia) {
         </div>
 
         <div class="neumorphism p-4 flex-1 overflow-y-auto">
+          {(!referencias || referencias.length === 0) && (
+            <div class="h-full min-h-[240px] flex flex-col items-center justify-center text-center gap-2 text-gray-500">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+              <p class="font-bold text-gray-700">{error ? 'No se pudo cargar el inventario' : 'Todavía no hay repuestos activos'}</p>
+              <p class="text-sm">{error ? 'Revisa la conexión y recarga la página.' : 'Agrega productos desde Inventario para empezar a vender.'}</p>
+            </div>
+          )}
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3" id="listaProductos">
             {referencias?.map(ref => (
               <div class="producto-card bg-white rounded-xl p-3 border border-gray-200 shadow-sm flex flex-col justify-between cursor-pointer hover:border-orange-400 hover:shadow-md transition-all group relative"
