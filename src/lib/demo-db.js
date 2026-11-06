@@ -2,7 +2,8 @@
 // Imita la parte de la API de Supabase que usa el POS, pero responde desde los datos
 // de prueba de demo-datos.js. Así la demo no depende de un proyecto de Supabase
 // (que en el plan gratuito se pausa por inactividad) y las lecturas son instantáneas.
-// Las escrituras devuelven el aviso de modo demo, igual que antes.
+// Las escrituras (ventas, abonos, ediciones) se aplican solo en memoria: funcionan
+// durante la visita y se pierden al recargar la página.
 
 import * as datos from './demo-datos.js';
 
@@ -16,8 +17,6 @@ const TABLAS = {
   detalle_ventas: datos.detalle_ventas,
   historial_abonos: datos.historial_abonos,
 };
-
-const ESCRITURAS = new Set(['insert', 'update', 'upsert', 'delete']);
 
 const copiar = (valor) => (valor == null ? valor : JSON.parse(JSON.stringify(valor)));
 
@@ -93,8 +92,13 @@ class Consulta {
     this.modo = 'lista';
     this.soloConteo = false;
     this.conteo = false;
-    this.esEscritura = false;
+    this.escritura = null;
   }
+
+  insert(filas) { this.escritura = { tipo: 'insert', filas: [].concat(filas) }; return this; }
+  upsert(filas) { this.escritura = { tipo: 'upsert', filas: [].concat(filas) }; return this; }
+  update(cambios) { this.escritura = { tipo: 'update', cambios }; return this; }
+  delete() { this.escritura = { tipo: 'delete' }; return this; }
 
   select(_columnas, opciones = {}) {
     if (opciones.head) this.soloConteo = true;
@@ -134,8 +138,39 @@ class Consulta {
   single() { this.modo = 'uno'; return this; }
   maybeSingle() { this.modo = 'quizas'; return this; }
 
+  aplicarEscritura() {
+    const tabla = TABLAS[this.tabla] || (TABLAS[this.tabla] = []);
+    const coincide = (fila) => this.filtros.every((f) => f(fila));
+    let afectadas = [];
+    const { tipo } = this.escritura;
+
+    if (tipo === 'insert' || tipo === 'upsert') {
+      for (const nueva of this.escritura.filas) {
+        const existente = tipo === 'upsert' && nueva.id != null ? tabla.find((f) => f.id === nueva.id) : null;
+        if (existente) {
+          Object.assign(existente, copiar(nueva));
+          afectadas.push(existente);
+          continue;
+        }
+        const fila = { id: `demo-${Date.now()}-${(contador += 1)}`, ...copiar(nueva) };
+        if (this.tabla === 'ventas' || this.tabla === 'historial_abonos') fila.fecha = fila.fecha || new Date().toISOString();
+        tabla.push(fila);
+        afectadas.push(fila);
+      }
+    } else if (tipo === 'update') {
+      afectadas = tabla.filter(coincide);
+      afectadas.forEach((fila) => Object.assign(fila, copiar(this.escritura.cambios)));
+    } else if (tipo === 'delete') {
+      afectadas = tabla.filter(coincide);
+      for (const fila of afectadas) tabla.splice(tabla.indexOf(fila), 1);
+    }
+
+    if (this.modo === 'uno' || this.modo === 'quizas') return respuesta(afectadas.length ? copiar(afectadas[0]) : null);
+    return respuesta(copiar(afectadas));
+  }
+
   ejecutar() {
-    if (this.esEscritura) return respuestaDemo();
+    if (this.escritura) return this.aplicarEscritura();
 
     let filas = (TABLAS[this.tabla] || []).filter((fila) => this.filtros.every((f) => f(fila)));
     const total = filas.length;
@@ -167,12 +202,10 @@ class Consulta {
   finally(fn) { return this.then((v) => { fn?.(); return v; }, (e) => { fn?.(); throw e; }); }
 }
 
+let contador = 0;
+
 function consultaDeTabla(tabla) {
-  const consulta = new Consulta(tabla);
-  for (const metodo of ESCRITURAS) {
-    consulta[metodo] = () => { consulta.esEscritura = true; return consulta; };
-  }
-  return consulta;
+  return new Consulta(tabla);
 }
 
 const storage = {
