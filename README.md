@@ -11,7 +11,7 @@ Nació como un sistema hecho para una tienda real de repuestos en Cali. Esta es 
 | Administrador | `demo` | `torque2026` |
 | Empleado | `cajero` | `torque2026` |
 
-La demo es de solo lectura: puedes recorrer todas las pantallas y armar ventas, pero nada se guarda.
+En el login hay botones de acceso rápido. Puedes hacer ventas, abonos y cotizaciones completas; nada se guarda al recargar la página.
 
 ## Qué hace
 
@@ -36,7 +36,7 @@ La demo es de solo lectura: puedes recorrer todas las pantallas y armar ventas, 
 
 **Seguridad en la base de datos.** Todas las tablas tienen Row Level Security. En la demo, la clave pública solo tiene permiso de lectura, de modo que aunque alguien use la consola del navegador no puede modificar datos.
 
-**Modo demo.** Con `PUBLIC_DEMO_MODE=true`, el cliente de Supabase intercepta las escrituras y responde con un aviso amable en lugar de un error, y el sitio muestra una franja indicando que es una demo. El mismo código corre en producción con el modo apagado.
+**Modo demo sin base de datos.** Con `PUBLIC_DEMO_MODE=true`, el POS no se conecta a Supabase: usa un cliente que imita la parte de la API que usa la app (consultas, filtros, orden, `single`) y responde desde datos de prueba incluidos en el proyecto, con 106 repuestos, 10 clientes y unas 100 ventas con fechas relativas a hoy. Las ventas, abonos y ediciones funcionan durante la visita y se descartan al recargar. Así la demo nunca queda vacía por una pausa del plan gratuito, y carga más rápido. El mismo código corre en producción contra Supabase con el modo apagado.
 
 **Historial fiel.** Cada venta guarda una copia del carrito y del detalle por producto. Si un precio cambia después, las facturas viejas siguen mostrando lo que realmente se cobró.
 
@@ -54,8 +54,8 @@ Variables necesarias (ver `.env.example`):
 
 | Variable | Para qué |
 |---|---|
-| `PUBLIC_SUPABASE_URL` / `PUBLIC_SUPABASE_ANON_KEY` | Conexión a Supabase con la clave pública |
-| `PUBLIC_DEMO_MODE` | `true` para el modo demo de solo lectura |
+| `PUBLIC_SUPABASE_URL` / `PUBLIC_SUPABASE_ANON_KEY` | Conexión a Supabase con la clave pública (no se usan en modo demo) |
+| `PUBLIC_DEMO_MODE` | `true` para la demo con datos de prueba locales |
 | `SESSION_SECRET` | Clave para firmar las sesiones, mínimo 32 caracteres |
 | `POS_ADMIN_USER` / `POS_ADMIN_PASS` | Cuenta de administrador |
 | `POS_EMPLEADO_USER` / `POS_EMPLEADO_PASS` | Cuenta de empleado |
@@ -66,8 +66,9 @@ Variables necesarias (ver `.env.example`):
 src/
   middleware.ts      verificación de sesión, roles y franja de demo
   lib/session.ts     creación y verificación de sesiones firmadas
-  lib/supabase.js    cliente de Supabase (con modo demo)
-  lib/demo.js        bloqueo de escrituras en modo demo
+  lib/supabase.js    cliente de Supabase, o el de la demo si el modo demo está activo
+  lib/demo-db.js     cliente en memoria que imita la API de Supabase
+  lib/demo-datos.js  datos de prueba de la tienda ficticia
   pages/pos/         pantallas del POS
   pos/ventas/        lógica del carrito, checkout, clientes y PDF
   components/        catálogo en PDF
