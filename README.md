@@ -2,7 +2,7 @@
 
 Punto de venta web para tiendas de repuestos de moto. Maneja inventario, ventas de contado y a crédito, cartera, clientes, facturas en PDF y estadísticas, con roles de administrador y empleado.
 
-Nació como un sistema hecho para una tienda real de repuestos en Cali. Esta es una versión demo con una tienda ficticia, **Torque Repuestos**, y datos de prueba.
+El mismo sistema lo usan a diario tres comercios de repuestos en Cali. Esta es una versión demo con una tienda ficticia, **Torque Repuestos**, y datos de prueba.
 
 **Demo en vivo:** https://torque-pos-demo.vercel.app
 
